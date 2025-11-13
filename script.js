@@ -1,7 +1,9 @@
-// Detectar ambiente automáticamente
 const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://127.0.0.1:5000'
-    : ''https://tmdb-backend-sdqh.onrender.com';
+    : 'https://tmdb-backend-sdqh.onrender.com';
+
+console.log('🌐 API URL configurada:', API_BASE_URL);
+console.log('📍 Hostname actual:', window.location.hostname);
 
 // Estado global
 let genreData = null;
@@ -236,13 +238,22 @@ function setLoading(isLoading) {
     }
 }
 
-// --- Fetch data ---
+// --- Fetch data con mejor manejo de errores ---
 async function fetchGenreData() {
     try {
+        console.log('🎬 Obteniendo datos de géneros desde:', `${API_BASE_URL}/api/reportes/top_generos`);
+        
         const response = await fetch(`${API_BASE_URL}/api/reportes/top_generos`);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        
+        console.log('📊 Response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         
         const data = await response.json();
+        console.log('✅ Datos de géneros recibidos:', data.length, 'géneros');
+        
         genreData = data;
         
         const limit = parseInt(document.getElementById('genreLimit').value);
@@ -251,18 +262,27 @@ async function fetchGenreData() {
         
         return true;
     } catch (error) {
-        console.error('Error al obtener datos de géneros:', error);
-        showError('No se pudieron cargar los datos de géneros');
+        console.error('❌ Error al obtener datos de géneros:', error);
+        showError('No se pudieron cargar los datos de géneros. Verifica la conexión con el backend.');
         return false;
     }
 }
 
 async function fetchDirectorData() {
     try {
+        console.log('🎬 Obteniendo datos de directores desde:', `${API_BASE_URL}/api/reportes/top_directores_ingresos`);
+        
         const response = await fetch(`${API_BASE_URL}/api/reportes/top_directores_ingresos`);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        
+        console.log('📊 Response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         
         const data = await response.json();
+        console.log('✅ Datos de directores recibidos:', data.length, 'directores');
+        
         directorData = data;
         
         const limit = parseInt(document.getElementById('directorLimit').value);
@@ -271,8 +291,8 @@ async function fetchDirectorData() {
         
         return true;
     } catch (error) {
-        console.error('Error al obtener datos de directores:', error);
-        showError('No se pudieron cargar los datos de directores');
+        console.error('❌ Error al obtener datos de directores:', error);
+        showError('No se pudieron cargar los datos de directores. Verifica la conexión con el backend.');
         return false;
     }
 }
@@ -311,6 +331,11 @@ function performSearch() {
     
     if (!query) {
         resultsDiv.innerHTML = '<p style="color: var(--text-secondary);">Ingresa un término de búsqueda</p>';
+        return;
+    }
+    
+    if (!genreData || !directorData) {
+        resultsDiv.innerHTML = '<p style="color: var(--text-secondary);">Cargando datos...</p>';
         return;
     }
     
@@ -399,7 +424,7 @@ function updateTable(type, data) {
     tbody.innerHTML = html;
 }
 
-// --- Error ---
+// --- Error mejorado ---
 function showError(message) {
     const mainContent = document.getElementById('mainContent');
     const errorDiv = document.createElement('div');
@@ -410,12 +435,16 @@ function showError(message) {
         padding: 2rem;
         text-align: center;
         margin: 2rem auto;
-        max-width: 500px;
+        max-width: 600px;
     `;
     errorDiv.innerHTML = `
         <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #ef4444; margin-bottom: 1rem;"></i>
-        <p style="margin-bottom: 1rem;">${message}</p>
-        <button onclick="location.reload()" style="padding: 0.75rem 1.5rem; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer;">
+        <p style="margin-bottom: 1rem; font-size: 1.1rem;">${message}</p>
+        <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.9rem;">
+            API URL: ${API_BASE_URL}<br>
+            Revisa la consola (F12) para más detalles
+        </p>
+        <button onclick="location.reload()" style="padding: 0.75rem 1.5rem; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
             <i class="fas fa-refresh"></i> Reintentar
         </button>
     `;
@@ -424,6 +453,7 @@ function showError(message) {
 
 // --- Cargar todos los datos ---
 async function loadAllData() {
+    console.log('🚀 Iniciando carga de datos...');
     setLoading(true);
     
     try {
@@ -433,11 +463,14 @@ async function loadAllData() {
         ]);
         
         if (genresSuccess && directorsSuccess) {
+            console.log('✅ Todos los datos cargados exitosamente');
             updateStats();
             updateTable('genres', genreData);
+        } else {
+            console.warn('⚠️ Algunos datos no se pudieron cargar');
         }
     } catch (error) {
-        console.error('Error al cargar datos:', error);
+        console.error('❌ Error general al cargar datos:', error);
     } finally {
         setLoading(false);
     }
@@ -452,5 +485,6 @@ document.getElementById('searchInput')?.addEventListener('keypress', (e) => {
 
 // --- Inicializar ---
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('📄 DOM cargado, iniciando aplicación...');
     loadAllData();
 });
