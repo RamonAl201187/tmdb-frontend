@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TMDB Analytics Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <i class="fas fa-film header-icon"></i>
+                <h1>TMDB Analytics</h1>
+            </div>
+            <p class="subtitle">Análisis de datos de películas en tiempo real</p>
+        </div>
+    </header>
+
+    <!-- Loading Spinner -->
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Cargando datos...</p>
+    </div>
+
+    <!-- Main Content -->
+    <main class="container" id="mainContent" style="display: none;">
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-video"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 id="totalMovies">0</h3>
+                    <p>Total Películas</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-masks-theater"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 id="totalGenres">0</h3>
+                    <p>Géneros</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-user-tie"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 id="topDirector">-</h3>
+                    <p>Director Top</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-dollar-sign"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 id="topRevenue">$0M</h3>
+                    <p>Máximos Ingresos</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters Section -->
+        <div class="filters-section">
+            <h2><i class="fas fa-filter"></i> Filtros y Configuración</h2>
+            <div class="filters-grid">
+                <!-- Genre Filters -->
+                <div class="filter-card">
+                    <label for="genreLimit">
+                        <i class="fas fa-list-ol"></i> Cantidad de Géneros
+                    </label>
+                    <div class="filter-controls">
+                        <input type="range" id="genreLimit" min="5" max="20" value="10" step="1">
+                        <span class="filter-value" id="genreLimitValue">10</span>
+                    </div>
+                    <button class="btn-apply" onclick="applyGenreFilter()">
+                        <i class="fas fa-sync-alt"></i> Aplicar
+                    </button>
+                </div>
+
+                <!-- Director Filters -->
+                <div class="filter-card">
+                    <label for="directorLimit">
+                        <i class="fas fa-list-ol"></i> Cantidad de Directores
+                    </label>
+                    <div class="filter-controls">
+                        <input type="range" id="directorLimit" min="3" max="15" value="5" step="1">
+                        <span class="filter-value" id="directorLimitValue">5</span>
+                    </div>
+                    <button class="btn-apply" onclick="applyDirectorFilter()">
+                        <i class="fas fa-sync-alt"></i> Aplicar
+                    </button>
+                </div>
+
+                <!-- Sort Order -->
+                <div class="filter-card">
+                    <label for="sortOrder">
+                        <i class="fas fa-sort"></i> Ordenar Por
+                    </label>
+                    <select id="sortOrder" class="filter-select" onchange="applySortOrder()">
+                        <option value="desc">Mayor a Menor</option>
+                        <option value="asc">Menor a Mayor</option>
+                    </select>
+                </div>
+
+                <!-- Chart Type -->
+                <div class="filter-card">
+                    <label for="chartType">
+                        <i class="fas fa-chart-bar"></i> Tipo de Gráfico
+                    </label>
+                    <select id="chartType" class="filter-select" onchange="changeChartType()">
+                        <option value="bar">Barras</option>
+                        <option value="horizontalBar">Barras Horizontales</option>
+                        <option value="line">Líneas</option>
+                        <option value="pie">Circular</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="charts-grid">
+            <!-- Genre Chart -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h2>
+                        <i class="fas fa-chart-bar"></i>
+                        <span id="genreChartTitle">Top 10 Géneros Más Populares</span>
+                    </h2>
+                    <div class="chart-actions">
+                        <span class="badge">Actualizado</span>
+                        <button class="btn-icon" onclick="downloadChart('genreChart')" title="Descargar">
+                            <i class="fas fa-download"></i>
+                        </button>
+                        <button class="btn-icon" onclick="refreshGenreData()" title="Refrescar">
+                            <i class="fas fa-refresh"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="genreChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Director Chart -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h2>
+                        <i class="fas fa-chart-line"></i>
+                        <span id="directorChartTitle">Top 5 Directores por Ingresos</span>
+                    </h2>
+                    <div class="chart-actions">
+                        <span class="badge">Actualizado</span>
+                        <button class="btn-icon" onclick="downloadChart('directorRevenueChart')" title="Descargar">
+                            <i class="fas fa-download"></i>
+                        </button>
+                        <button class="btn-icon" onclick="refreshDirectorData()" title="Refrescar">
+                            <i class="fas fa-refresh"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="directorRevenueChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Section -->
+        <div class="search-section">
+            <h2><i class="fas fa-search"></i> Búsqueda Avanzada</h2>
+            <div class="search-card">
+                <div class="search-controls">
+                    <input type="text" id="searchInput" placeholder="Buscar género o director..." class="search-input">
+                    <button class="btn-search" onclick="performSearch()">
+                        <i class="fas fa-search"></i> Buscar
+                    </button>
+                </div>
+                <div id="searchResults" class="search-results"></div>
+            </div>
+        </div>
+
+        <!-- Data Table -->
+        <div class="table-section">
+            <h2><i class="fas fa-table"></i> Tabla de Datos</h2>
+            <div class="table-card">
+                <div class="table-tabs">
+                    <button class="tab-btn active" onclick="showTable('genres')">Géneros</button>
+                    <button class="tab-btn" onclick="showTable('directors')">Directores</button>
+                </div>
+                <div class="table-container">
+                    <table id="dataTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Nombre</th>
+                                <th>Conteo / Ingresos</th>
+                                <th>Porcentaje</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <!-- Datos dinámicos aquí -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 TMDB Analytics. Datos de The Movie Database.</p>
+            <div class="footer-links">
+                <a href="https://www.themoviedb.org/" target="_blank">
+                    <i class="fas fa-external-link-alt"></i> TMDB
+                </a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
